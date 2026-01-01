@@ -1,10 +1,11 @@
 const sourdoughSchedule = [
+  { name: "Cool", durationHours: 2 },
   { name: "Bake", durationHours: 1 },
-  { name: "Final Proof", durationHours: 1 },
-  { name: "Bulk Fermentation", durationHours: 12 },
-  { name: "Autolyse & Mix", durationHours: .5 },
+  { name: "Shape and proof", durationHours: 1 },
+  { name: "Mix", durationHours: 12 },
+  { name: "Autolyse", durationHours: .5 },
   { name: "Quick starter maturation", durationHours: 12 },
-  { name: "Optimal starter maturation", durationHours: 24 }
+  { name: "Optimal starter maturation", durationHours: 12 }
 ];
 
 function calculateSchedule(targetDateTime) {

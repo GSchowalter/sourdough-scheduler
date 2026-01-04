@@ -17,9 +17,14 @@
       <div class="max-w-2xl w-full bg-white rounded-lg shadow p-6">
         <h1 class="text-2xl font-semibold mb-4">Sourdough Scheduler</h1>
 
-        <label class="block text-sm text-gray-600 mb-2">Time you want to have finished bread:</label>
+        <label class="block text-sm text-gray-600 mb-2">Time you want to have finished bread or start mixing the starter:</label>
         <div class="flex gap-2 mb-4">
           <input type="datetime-local" id="bakeTime" class="flex-1 border rounded px-3 py-2" />
+          <select id="timeMode" class="border rounded px-3 py-2" aria-label="Choose time mode">
+            <option value="ready">Ready by</option>
+            <option value="mixStart">Start mixing dough</option>
+            <option value="starterStart">Start mixing starter</option>
+          </select>
           <button id="calculateBtn" class="bg-emerald-500 text-white px-4 py-2 rounded hover:bg-emerald-600">Calculate</button>
         </div>
 

@@ -8,17 +8,54 @@ const sourdoughSchedule = [
   { name: "Optimal starter maturation", durationHours: 12 }
 ];
 
-function calculateSchedule(targetDateTime) {
-  let current = new Date(targetDateTime);
-  // build entries with start and end times
-  const entries = sourdoughSchedule.map(step => {
-    const start = new Date(current.getTime() - step.durationHours * 60 * 60 * 1000);
-    const end = new Date(current.getTime());
-    current = start;
-    return { ...step, start, end };
-  }).reverse();
+function calculateSchedule(targetDateTime, mode = 'ready') {
+  const target = new Date(targetDateTime);
+  if (isNaN(target)) return [];
 
-  return entries;
+  if (mode === 'ready') {
+    let current = new Date(target);
+    // build entries with start and end times (working backwards from finished time)
+    const entries = sourdoughSchedule.map(step => {
+      const start = new Date(current.getTime() - step.durationHours * 60 * 60 * 1000);
+      const end = new Date(current.getTime());
+      current = start;
+      return { ...step, start, end };
+    }).reverse();
+    return entries;
+  }
+
+  // If mode is 'mixStart', treat targetDateTime as the start time of the 'Mix' step
+  if (mode === 'mixStart' || mode == 'starterStart') {
+    const steps = [...sourdoughSchedule].reverse(); // earliest -> latest
+    const idx =  mode === 'mixStart' ? steps.findIndex(s => s.name.toLowerCase() === 'mix') : 0;
+    if (idx === -1) {
+      // fallback to ready behavior
+      return calculateSchedule(targetDateTime, 'ready');
+    }
+
+    // set mix start
+    steps[idx].start = new Date(target);
+    steps[idx].end = new Date(steps[idx].start.getTime() + steps[idx].durationHours * 60 * 60 * 1000);
+
+    // compute forward for steps after idx
+    for (let i = idx + 1; i < steps.length; i++) {
+      const prev = steps[i - 1];
+      steps[i].start = new Date(prev.end.getTime());
+      steps[i].end = new Date(steps[i].start.getTime() + steps[i].durationHours * 60 * 60 * 1000);
+    }
+
+    // compute backward for steps before idx
+    for (let i = idx - 1; i >= 0; i--) {
+      const next = steps[i + 1];
+      steps[i].end = new Date(next.start.getTime());
+      steps[i].start = new Date(steps[i].end.getTime() - steps[i].durationHours * 60 * 60 * 1000);
+    }
+
+    return steps;
+  }
+
+  // default fallback
+  return calculateSchedule(targetDateTime, 'ready');
 }
 
 function formatDate(d) {
@@ -40,7 +77,7 @@ function formatTime(d) {
   return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 }
 
-function renderSchedule(entries) {
+function renderSchedule(entries, mode = 'ready') {
   const container = document.getElementById('schedule');
   if (!container) return;
   if (!entries || entries.length === 0) {
@@ -51,7 +88,7 @@ function renderSchedule(entries) {
   // header
   const header = document.createElement('div');
   header.className = 'mb-3';
-  header.textContent = 'Sourdough schedule (earliest → latest)';
+  header.textContent = `Sourdough schedule (earliest → latest) — ${mode === 'mixStart' ? 'anchored at mix start' : 'anchored at ready time'}`;
 
   const list = document.createElement('ol');
   list.className = 'space-y-3';
@@ -69,6 +106,14 @@ function renderSchedule(entries) {
     const title = document.createElement('div');
     title.className = 'text-lg font-medium';
     title.textContent = e.name;
+
+    // if this is the anchored step in mixStart mode, show a small badge
+    if (mode === 'mixStart' && e.name.toLowerCase() === 'mix') {
+      const anchorBadge = document.createElement('span');
+      anchorBadge.className = 'ml-2 inline-block text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded';
+      anchorBadge.textContent = 'Anchor';
+      title.appendChild(anchorBadge);
+    }
 
     const times = document.createElement('div');
     times.className = 'text-sm text-gray-600';
@@ -97,17 +142,19 @@ function renderSchedule(entries) {
 
 function showSchedule() {
   const input = document.getElementById('bakeTime');
+  const modeSelect = document.getElementById('timeMode');
   const container = document.getElementById('schedule');
   if (!input || !container) return;
 
   const value = input.value;
+  const mode = modeSelect ? modeSelect.value : 'ready';
   if (!value) {
-    container.textContent = 'Please choose a bake date and time.';
+    container.textContent = 'Please choose a date and time.';
     return;
   }
 
-  const schedule = calculateSchedule(value);
-  renderSchedule(schedule);
+  const schedule = calculateSchedule(value, mode);
+  renderSchedule(schedule, mode);
 }
 
 // wire button after DOM loaded
